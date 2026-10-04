@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SREC AGENT</title>
+<style>
+:root{--bg:#212121;--panel:#171717;--text:#ececec;--muted:#9b9b9b;--line:#343434;--green:#28d17c;--hover:#2a2a2a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}
+.app{display:flex;height:100dvh}
+.sidebar{width:260px;background:var(--panel);padding:12px;display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:.08em;padding:10px 8px 22px}
+.logo{height:31px;width:31px;border-radius:11px;background:linear-gradient(145deg,#3ce59a,#087d50);display:grid;place-items:center;color:#082d1c;font-weight:900}
+.new{border:1px solid #3b3b3b;background:transparent;border-radius:10px;padding:10px;text-align:left;width:100%;display:flex;gap:10px;align-items:center}
+.new:hover,.chatitem:hover,.sidebtn:hover{background:var(--hover)}
+.sidehead{font-size:11px;color:#777;padding:24px 8px 8px;text-transform:uppercase;letter-spacing:.12em}
+.history{overflow:auto;flex:1}
+.chatitem{padding:9px 10px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c8c8c8;font-size:13px;cursor:pointer}
+.chatitem.active{background:#2b2b2b;color:#fff}
+.bottom{border-top:1px solid var(--line);padding-top:10px}
+.sidebtn{width:100%;border:0;background:none;text-align:left;padding:10px;border-radius:9px;font-size:13px;color:#c7c7c7}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.topbar{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+.top-left{display:flex;align-items:center;gap:10px;font-weight:600}
+.iconbtn{border:0;background:transparent;border-radius:9px;width:36px;height:36px;display:grid;place-items:center;color:#aaa}
+.iconbtn:hover{background:#333;color:#fff}
+.modeltag{font-size:12px;color:#aaa;border:1px solid #3b3b3b;padding:5px 9px;border-radius:8px}
+.scroll{flex:1;overflow:auto;padding:22px 20px 155px}
+.welcome{height:100%;min-height:280px;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center}
+.welcome .mark{width:50px;height:50px;border-radius:18px;background:#2b2b2b;display:grid;place-items:center;color:var(--green);font-size:25px;margin-bottom:18px}
+.welcome h1{font-size:27px;font-weight:550;letter-spacing:-.04em;margin:0 0 8px}
+.welcome p{color:#aaa;margin:0}
+.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(640px,100%);margin-top:32px}
+.suggest{background:transparent;border:1px solid #3b3b3b;border-radius:13px;text-align:left;padding:13px 15px;color:#ddd;font-size:13px}
+.suggest:hover{background:#2b2b2b}.suggest small{display:block;color:#888;margin-top:3px}
+.messages{max-width:790px;margin:0 auto;display:flex;flex-direction:column;gap:27px}
+.msg{display:flex;gap:14px;align-items:flex-start}
+.avatar{flex:0 0 29px;height:29px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:#383838;color:#eee}
+.msg.ai .avatar{background:#183e2c;color:#65eaa6}
+.bubble{min-width:0;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;padding-top:2px}
+.msg.user{justify-content:flex-end}
+.msg.user .bubble{background:#303030;padding:11px 15px;border-radius:18px;max-width:min(75%,650px)}
+.msg.user .avatar{display:none}
+.composer-wrap{position:absolute;bottom:0;left:0;right:0;padding:15px 20px 17px;background:linear-gradient(transparent,var(--bg) 22%)}
+.composer{max-width:790px;margin:auto;border:1px solid #414141;background:#2f2f2f;border-radius:25px;padding:10px 12px;box-shadow:0 8px 28px #0002}
+.composer textarea{display:block;width:100%;resize:none;max-height:180px;min-height:30px;background:none;border:0;outline:0;color:#fff;padding:4px 8px}
+.composer-row{display:flex;justify-content:space-between;align-items:center;padding:3px 2px 0}
+.hint{font-size:11px;color:#888;padding-left:8px}
+.send{width:34px;height:34px;border:0;border-radius:50%;background:#f4f4f4;color:#161616;font-weight:900;font-size:17px}
+.send:disabled{opacity:.4;cursor:default}
+.footnote{text-align:center;font-size:11px;color:#777;margin-top:9px}
+.overlay{display:none;position:fixed;inset:0;background:#0009;z-index:5}
+.toast{position:absolute;top:65px;left:50%;transform:translateX(-50%);background:#303030;border:1px solid #444;padding:9px 13px;border-radius:10px;font-size:12px;display:none;z-index:4}
+
+/* Pet */
+.pet-wrap{display:flex;align-items:center;gap:12px}
+.pet{width:48px;height:48px;position:relative;flex-shrink:0}
+.pet-body{width:36px;height:28px;background:#3dd68c;border-radius:50% 50% 45% 45%;position:absolute;left:6px;top:14px;animation:pet-bounce .6s ease-in-out infinite alternate}
+.pet-head{width:28px;height:26px;background:#3dd68c;border-radius:50%;position:absolute;left:10px;top:2px;animation:pet-bounce .6s ease-in-out infinite alternate}
+.pet-eye{width:5px;height:5px;background:#0d2b1a;border-radius:50%;position:absolute;top:10px;animation:pet-blink 2.4s infinite}
+.pet-eye.l{left:7px}.pet-eye.r{right:7px}
+.pet-cheek{width:6px;height:4px;background:#ff8a8a;border-radius:50%;position:absolute;top:14px;opacity:.7}
+.pet-cheek.l{left:2px}.pet-cheek.r{right:2px}
+.pet-ear{width:10px;height:12px;background:#2bb873;border-radius:50% 50% 0 0;position:absolute;top:-4px}
+.pet-ear.l{left:2px;transform:rotate(-20deg)}.pet-ear.r{right:2px;transform:rotate(20deg)}
+@keyframes pet-bounce{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+@keyframes pet-blink{0%,40%,60%,100%{transform:scaleY(1)}50%{transform:scaleY(.1)}}
+.pet-status{font-size:13px;color:#7dcea0}
+
+/* Login gate */
+.gate{display:none;position:fixed;inset:0;z-index:30;background:#1a1a1a;align-items:center;justify-content:center}
+.gate.show{display:flex}
+.gate-box{width:min(360px,90%);background:#252525;border:1px solid #444;border-radius:18px;padding:28px 24px;text-align:center}
+.gate-box h2{margin:0 0 8px;font-size:20px}
+.gate-box p{color:#999;font-size:13px;margin:0 0 20px}
+.gate-box input{width:100%;padding:12px;border-radius:10px;border:1px solid #444;background:#191919;color:#fff;outline:0;margin-bottom:14px;text-align:center}
+.gate-box input:focus{border-color:#36ba7b}
+.gate-box .btn{width:100%;padding:12px;border:1px solid #444;background:#e8e8e8;color:#171717;border-radius:9px}
+
+@media(max-width:720px){
+.sidebar{position:fixed;z-index:7;inset:0 auto 0 0;transform:translateX(-105%);width:280px}
+.sidebar.open{transform:translateX(0)}.overlay.show{display:block}
+.topbar{padding:0 12px}.scroll{padding:10px 14px 145px}
+.composer-wrap{padding:10px 12px 12px}.welcome h1{font-size:23px}
+.suggestions{grid-template-columns:1fr}.modeltag{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div style="font-size:36px;margin-bottom:10px">🔐</div>
+    <h2>SREC AGENT</h2>
+    <p>Nhập mật khẩu để tiếp tục</p>
+    <input type="password" id="gatePwd" placeholder="Mật khẩu" autofocus>
+    <button class="btn" id="gateBtn">Vào</button>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="logo">S</div><span>SREC AGENT</span></div>
+    <button class="new" id="newChat"><span style="font-size:20px">＋</span> Cuộc trò chuyện mới</button>
+    <div class="sidehead">Gần đây</div>
+    <div class="history" id="history"></div>
+    <div class="bottom">
+      <button class="sidebtn" id="workspaceBtn">▣　Thư mục làm việc</button>
+      <div style="padding:9px;color:#777;font-size:11px">SREC AGENT · Trợ lý AI</div>
+    </div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+  <main class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="iconbtn" id="menu" aria-label="Menu">☰</button>
+        <span>SREC AGENT</span>
+        <span class="modeltag" id="modelTag">AI　⌄</span>
+      </div>
+    </header>
+    <div class="toast" id="toast"></div>
+    <section class="scroll" id="scroll">
+      <div class="welcome" id="welcome">
+        <div class="mark">✳</div>
+        <h1>Bạn muốn làm gì hôm nay?</h1>
+        <p>Hỏi đáp, sáng tạo, học tập hay xử lý công việc cùng SREC AGENT.</p>
+        <div class="suggestions">
+          <button class="suggest" data-prompt="Lập cho tôi kế hoạch học tập hiệu quả trong 7 ngày.">✦ Lập kế hoạch học tập<small>Chia mục tiêu thành các bước dễ làm</small></button>
+          <button class="suggest" data-prompt="Giải thích trí tuệ nhân tạo bằng cách đơn giản, có ví dụ.">◈ Giải thích một chủ đề<small>Hiểu kiến thức phức tạp dễ dàng hơn</small></button>
+          <button class="suggest" data-prompt="Viết giúp tôi một website giới thiệu chuyên nghiệp bằng HTML, CSS và JavaScript.">⌘ Viết code<small>Xây dựng và sửa lỗi dự án</small></button>
+          <button class="suggest" data-prompt="Hãy giúp tôi nghĩ ra 5 ý tưởng kinh doanh thực tế, kèm ưu nhược điểm.">◎ Tìm ý tưởng<small>Brainstorm và phân tích lựa chọn</small></button>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+    </section>
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="prompt" rows="1" placeholder="Nhắn tin cho SREC AGENT..."></textarea>
+        <div class="composer-row">
+          <span class="hint">AI có thể mắc lỗi. Hãy kiểm tra thông tin quan trọng.</span>
+          <button class="send" id="send" aria-label="Gửi">↑</button>
+        </div>
+      </div>
+      <div class="footnote">Enter để gửi · Shift + Enter để xuống dòng</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let chatId=null,busy=false;
+
+function toast(s){$("toast").textContent=s;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",3500)}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function petHTML(){
+  return `<div class="pet-wrap">
+    <div class="pet">
+      <div class="pet-head">
+        <div class="pet-ear l"></div><div class="pet-ear r"></div>
+        <div class="pet-eye l"></div><div class="pet-eye r"></div>
+        <div class="pet-cheek l"></div><div class="pet-cheek r"></div>
+      </div>
+      <div class="pet-body"></div>
+    </div>
+    <span class="pet-status">Đang suy nghĩ...</span>
+  </div>`;
+}
+
+async function checkStatus(){
+  try{
+    const r=await fetch("/api/status");const d=await r.json();
+    $("modelTag").textContent=(d.model||"AI")+"　⌄";
+    if(!d.ready) toast("Server chưa cấu hình API key (config.json).");
+    if(d.need_password&&!d.authed){$("gate").classList.add("show");return false}
+    return true;
+  }catch{toast("Không kết nối được server.");return false}
+}
+
+$("gateBtn").onclick=async()=>{
+  try{
+    const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("gatePwd").value})});
+    const d=await r.json();
+    if(!r.ok) throw Error(d.error||"Sai mật khẩu");
+    $("gate").classList.remove("show");initApp();
+  }catch(e){toast(e.message)}
+};
+$("gatePwd").addEventListener("keydown",e=>{if(e.key==="Enter")$("gateBtn").click()});
+
+function setChat(id){chatId=id;$("messages").innerHTML="";$("welcome").style.display="none";loadChat(id);renderHistory()}
+async function loadChat(id){
+  try{const r=await fetch("/api/chats/"+id);if(r.status===401){$("gate").classList.add("show");return}
+    const arr=await r.json();$("messages").innerHTML="";
+    if(!arr.length){$("welcome").style.display="flex";return}
+    arr.forEach(m=>addMessage(m.role,m.content));
+  }catch{}
+}
+function addMessage(role,content,isThinking){
+  $("welcome").style.display="none";
+  const el=document.createElement("div");
+  el.className="msg "+(role==="assistant"?"ai":"user");
+  if(isThinking){el.innerHTML='<div class="avatar">✳</div><div class="bubble">'+petHTML()+"</div>"}
+  else{el.innerHTML=(role==="assistant"?'<div class="avatar">✳</div>':'')+'<div class="bubble">'+esc(content)+"</div>"}
+  $("messages").appendChild(el);$("scroll").scrollTop=$("scroll").scrollHeight;return el;
+}
+async function renderHistory(){
+  try{const r=await fetch("/api/chats");if(r.status===401)return;const arr=await r.json();
+    $("history").innerHTML="";
+    arr.forEach(c=>{const b=document.createElement("div");b.className="chatitem"+(c.id===chatId?" active":"");
+      b.textContent=c.title||"Cuộc trò chuyện mới";b.title=b.textContent;
+      b.onclick=()=>{setChat(c.id);closeSide()};$("history").appendChild(b)})}catch{}
+}
+async function newChat(){
+  const id=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36);
+  await fetch("/api/chats",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+  chatId=id;$("messages").innerHTML="";$("welcome").style.display="flex";renderHistory();closeSide();$("prompt").focus();
+}
+async function send(){
+  const input=$("prompt");const msg=input.value.trim();if(!msg||busy)return;
+  if(!chatId){const id=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36);
+    await fetch("/api/chats",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});chatId=id}
+  input.value="";input.style.height="auto";addMessage("user",msg);
+  const pending=addMessage("assistant","",true);busy=true;$("send").disabled=true;
+  try{
+    const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,message:msg})});
+    const d=await r.json();
+    if(r.status===401){$("gate").classList.add("show");pending.remove();return}
+    if(!r.ok)throw Error(d.error||"Có lỗi xảy ra");
+    pending.querySelector(".bubble").innerHTML=esc(d.answer||"Không có phản hồi.");
+  }catch(e){pending.querySelector(".bubble").innerHTML='<span style="color:#ffb4a9">⚠ '+esc(e.message)+"</span>"}
+  finally{busy=false;$("send").disabled=false;renderHistory();$("scroll").scrollTop=$("scroll").scrollHeight}
+}
+$("send").onclick=send;
+$("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
+$("prompt").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,180)+"px"});
+$("newChat").onclick=newChat;
+$("workspaceBtn").onclick=()=>toast("Tệp AI tạo sẽ nằm trong thư mục workspace của dự án.");
+document.querySelectorAll(".suggest").forEach(b=>b.onclick=()=>{$("prompt").value=b.dataset.prompt;send()});
+function closeSide(){$("sidebar").classList.remove("open");$("overlay").classList.remove("show")}
+$("menu").onclick=()=>{$("sidebar").classList.toggle("open");$("overlay").classList.toggle("show")};
+$("overlay").onclick=closeSide;
+async function initApp(){renderHistory();newChat()}
+(async()=>{const ok=await checkStatus();if(ok)initApp()})();
+</script>
+</body>
+</html>

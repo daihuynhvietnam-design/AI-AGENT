@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+config.json
+srec_agent.db
+*.db
+*.log
+.env
+.env.*
+workspace/*
+!workspace/.gitkeep
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
