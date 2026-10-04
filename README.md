@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SREC AGENT
 
 Trợ lý AI chạy trên máy bạn. **Người dùng không cần nhập API key** — key cấu hình một lần bởi admin.
@@ -68,3 +69,6 @@ Trợ lý AI chạy trên máy bạn. **Người dùng không cần nhập API k
 ## License
 
 MIT
+=======
+# AI-AGENT
+>>>>>>> 3b373f0a9a1155133f3cf79319bf0ffea2d5c439
